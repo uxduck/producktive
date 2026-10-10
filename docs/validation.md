@@ -120,9 +120,33 @@ access only to this bucket. Its S3 credentials are saved in the owner-only local
 rclone configuration under `producktive-r2`; existing DuckType remotes remain
 unchanged. An authenticated listing and a small upload under `validation/setup/`
 succeeded. Downloading that object over the public HTTPS domain returned identical
-bytes. No app archive or appcast has been published.
+bytes. The initial setup check uploaded only a small test object.
 
-This update build has not been notarized. Actual downloading, installation on
-quit, relaunch, and deadline/settings preservation require two notarized builds
-and a working published feed; these checks remain outstanding. The earlier idle
-measurements predate Sparkle.
+Apple accepted the three 0.3.0 submissions: validation build 4
+(`1edb18e1-238b-4d9e-8711-d7c0176aa649`), validation build 5
+(`2771506b-bd4c-4621-9207-6190ec2a38a2`), and production build 5
+(`28ac5bdc-0024-48dc-8060-89cb4335961e`). Stapler validation and Gatekeeper
+assessment passed for each. Archives and signed feeds were regenerated after
+stapling.
+
+The validation feed was published under `validation/0.3.0/`. A temporary build-4
+installation launched with fictional deadlines in a temporary home. Sparkle's
+manual check offered 0.3.0 (5), downloaded the signed archive, replaced the bundle
+with build 5, and relaunched it. The fictional deadline file was unchanged and
+the existing title-length preference remained 7. Sparkle's relaunch uses the
+normal user home, so the relaunched app displayed the normal selected file.
+
+A second build-4 test copy used a per-launch overdue-check argument. With both
+automatic settings enabled, Sparkle downloaded build 5 and started its installer
+without a manual check. Clicking the app's normal Quit button installed build 5.
+The resulting bundle passed deep signature verification and stapler validation;
+the fictional deadline file was unchanged. Test processes were stopped.
+
+Public HTTPS downloads matched the uploaded bytes. The live feed returns
+`no-cache, max-age=0, must-revalidate` with a dynamic Cloudflare cache status;
+archives return `public, max-age=31536000, immutable`. An Intel Mac, macOS 13,
+and an extended idle measurement with Sparkle remain manual checks.
+
+Production build 5 and its signed feed were subsequently published under
+`stable/` using the same verified publisher. Public payload and feed bytes
+matched the local signed files.
