@@ -50,3 +50,27 @@ Stapler validation succeeded; Gatekeeper assessment returned accepted with sourc
 `Notarized Developer ID`. This initial release is a prerelease while the manual
 checks above remain outstanding. The installed app and managed agent CLI were
 updated to this build.
+
+October 10 launch visibility fix (local version 0.1.1): the previous app process
+was running, but manual launches only exposed the menu bar item. Manual startup
+now opens a standalone deadline window; a reopen Apple event restores that same
+window. Closing it keeps the app running. Panel visibility is tracked across both
+the window and menu bar panel for countdown scheduling. Packaging can overwrite
+dependency licenses copied read-only by an earlier build.
+
+The universal fix was built, signed with the same Developer ID, installed in
+`~/Applications/Producktive.app`, and restarted against the existing vault config.
+The deadline CLI validated seven active and three archived records. The core
+suite passed all 17 tests. Live launch/reopen and menu bar interaction still need
+an unlocked Mac; UI automation reported that the screen was locked. This local
+fix has not been notarized or published as a new release.
+
+The updated native panel was rendered and visually inspected with the fictional
+example in an isolated temporary data home. Titles, individual countdowns,
+dates, goals, progress, archived disclosure, and footer controls were readable.
+The panel now explicitly paints the native window background, including in
+offscreen exports. The isolated app exited cleanly after the render check.
+
+Three ten-second-spaced samples of the final installed process reported 0.0%
+CPU, 34 MB memory, zero idle wakeups, and unchanged CPU time of 0.22 seconds.
+The standalone deadline window was retained during this locked-screen sample.

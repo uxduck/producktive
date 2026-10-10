@@ -3,24 +3,51 @@ import AppKit
 import ProducktiveCore
 
 @main struct ProducktiveApp: App {
-    @StateObject private var model = AppModel()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     var body: some Scene {
-        MenuBarExtra { DeadlinePanel(model: model) } label: { Text(model.label) }
+        MenuBarExtra { DeadlinePanel(model: appDelegate.model) } label: { DeadlineMenuLabel(model: appDelegate.model) }
             .menuBarExtraStyle(.window)
     }
 
+}
+
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
+    let model = AppModel()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        let loginLaunch = event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
+        if !loginLaunch, !CommandLine.arguments.contains("--preview-panel") {
+            model.showDeadlineWindow()
+        }
+        // Handle explicit launches even when the menu bar item is hidden or crowded.
+        NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(reopen(_:withReplyEvent:)), forEventClass: AEEventClass(kCoreEventClass), andEventID: AEEventID(kAEReopenApplication))
+    }
+
+    @objc private func reopen(_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor) {
+        model.showDeadlineWindow()
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+}
+
+struct DeadlineMenuLabel: View {
+    @ObservedObject var model: AppModel
+    var body: some View { Text(model.label) }
 }
 
 struct DeadlinePanel: View {
     @ObservedObject var model: AppModel
     @State private var agents = Set<Agent>()
     @State private var showAgents = false
+    @State private var visibilityID = UUID()
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "calendar.badge.clock").foregroundStyle(.orange)
                 Text("Producktive").font(.headline)
                 Spacer()
+                Button { model.showDeadlineWindow() } label: { Image(systemName: "arrow.up.right.square") }.help("Open deadline window")
                 Button { model.reload(force: true) } label: { Image(systemName: "arrow.clockwise") }.help("Reload deadlines")
             }
             if let error = model.error {
@@ -60,9 +87,11 @@ struct DeadlinePanel: View {
             }
         }
         .padding(16).frame(width: 440)
+        .background(Color(nsColor: .windowBackgroundColor))
         .background(PanelVisibility { visible in
-            if model.dropdownOpen != visible { model.dropdownOpen = visible; model.refreshTime() }
+            model.setPanelVisible(visible, id: visibilityID)
         })
+        .onDisappear { model.setPanelVisible(false, id: visibilityID) }
     }
     @ViewBuilder private func section(_ name: String, events: [ResolvedEvent], archived: Bool) -> some View {
         if !events.isEmpty {

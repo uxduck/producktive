@@ -8,7 +8,9 @@ until you resolve them. macOS 13 or later, Apple silicon and Intel.
 
 Download the universal app from [Releases](https://github.com/UXDuck/producktive/releases),
 unzip, and move **Producktive.app** into Applications. Launch it and choose your
-Markdown deadline file. The app appears in the menu bar without a Dock icon.
+Markdown deadline file. Opening the app shows its deadline window, and reopening
+it brings that window back. Closing the window leaves the countdown running in
+the menu bar without a Dock icon. Login launches run quietly in the menu bar.
 
 First launch creates an empty `~/.producktive/deadlines.md` if no config or default
 file exists. Add your deadlines with an agent, a text editor, or the bundled CLI.
@@ -87,6 +89,10 @@ See [the bundled skill](skills/producktive/SKILL.md) for examples.
 
 ## Troubleshooting
 
+If the menu bar is crowded or the countdown is hidden behind the camera notch,
+open **Producktive.app** again from Applications or Spotlight to show the deadline
+window. The panel's **Open deadline window** button opens the same window.
+
 Malformed edits keep the last valid snapshot with a persistent red **Stale data**
 message and a warning in the menu bar. Edit the file to correct the error or select
 a valid file. Mutating controls are disabled while stale. Empty files/lists and
@@ -113,6 +119,10 @@ in the application.
 Builds default to ad hoc signing; CI artifacts are not notarized. To produce a
 Developer ID release, set `SIGNING_IDENTITY` and a `NOTARY_PROFILE` stored with
 `xcrun notarytool store-credentials`, then run `scripts/package-release.sh`.
+Alternatively, supply `APPLE_API_KEY_PATH`, `APPLE_API_KEY` (the key ID), and
+`APPLE_API_ISSUER` for App Store Connect API authentication. Keep credentials
+outside the repository. Packaging checks that Apple accepted notarization before
+stapling and verifies Gatekeeper acceptance.
 The release notes state the actual signing and notarization status.
 
 MIT licensed. Public examples, tests, screenshots, and CI contain fictional data.

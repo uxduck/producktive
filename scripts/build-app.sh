@@ -6,6 +6,8 @@ swift build -c "$configuration" --arch arm64 --arch x86_64
 binary_dir="$(swift build -c "$configuration" --arch arm64 --arch x86_64 --show-bin-path)"
 app="dist/Producktive.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/bin" "$app/Contents/Resources/skills" "$app/Contents/Resources/examples"
+# Dependency licenses may have been copied read-only by a previous build.
+chmod -R u+w "$app"
 cp "$binary_dir/Producktive" "$app/Contents/MacOS/Producktive"
 cp "$binary_dir/producktive-cli" "$app/Contents/Resources/bin/producktive-cli"
 cp -R skills/producktive "$app/Contents/Resources/skills/"
@@ -21,8 +23,8 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <key>CFBundleDisplayName</key><string>Producktive</string>
 <key>CFBundleExecutable</key><string>Producktive</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>0.1.1</string>
+<key>CFBundleVersion</key><string>2</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>

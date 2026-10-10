@@ -9,7 +9,7 @@ import ProducktiveCore
     @Published private(set) var fileURL: URL?
     @Published private(set) var now = Date()
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
-    @Published var dropdownOpen = false
+    @Published private(set) var dropdownOpen = false
     @Published var skillMessage: String?
     private var revision: FileRevision?
     private var snapshotURL: URL?
@@ -17,6 +17,8 @@ import ProducktiveCore
     private var observers: [NSObjectProtocol] = []
     private var workspaceObservers: [NSObjectProtocol] = []
     private var previewWindow: NSWindow?
+    private var deadlineWindow: NSWindow?
+    private var visiblePanels = Set<UUID>()
     private var didExportPreview = false
     private var loadingGeneration = 0
     private let home: URL
@@ -43,6 +45,24 @@ import ProducktiveCore
         if CommandLine.arguments.contains("--preview-panel") {
             DispatchQueue.main.async { [weak self] in self?.showPreview() }
         }
+    }
+    func showDeadlineWindow() {
+        if deadlineWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: DeadlinePanel(model: self)))
+            window.title = "Producktive"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.setContentSize(NSSize(width: 440, height: 660))
+            window.center()
+            deadlineWindow = window
+        }
+        deadlineWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    func setPanelVisible(_ visible: Bool, id: UUID) {
+        if visible { visiblePanels.insert(id) } else { visiblePanels.remove(id) }
+        let open = !visiblePanels.isEmpty
+        if dropdownOpen != open { dropdownOpen = open; refreshTime() }
     }
     private func showPreview() {
         let window = NSWindow(contentViewController: NSHostingController(rootView: DeadlinePanel(model: self)))
