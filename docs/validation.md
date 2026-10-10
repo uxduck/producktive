@@ -113,8 +113,16 @@ automatic check/install controls enabled and an enabled **Check for Updates…**
 button. A manual check of the unpublished feed returned Sparkle's update error
 dialog and left the deadline window usable. The test process was stopped.
 
-This update build has not been notarized or published. The existing rclone R2
-remote currently returns HTTP 400 `InvalidArgument: Authorization` on a read-only
-listing. Actual downloading, installation on quit, relaunch, and deadline/settings
-preservation require two notarized builds and a working published feed; these
-checks remain outstanding. The earlier idle measurements predate Sparkle.
+The dedicated `producktive-app-updates` R2 bucket was created through Cloudflare's
+dashboard. Its custom domain `producktive-updates.duck-type.com` reports Active
+and Enabled with minimum TLS 1.2. A permanent account token has Object Read & Write
+access only to this bucket. Its S3 credentials are saved in the owner-only local
+rclone configuration under `producktive-r2`; existing DuckType remotes remain
+unchanged. An authenticated listing and a small upload under `validation/setup/`
+succeeded. Downloading that object over the public HTTPS domain returned identical
+bytes. No app archive or appcast has been published.
+
+This update build has not been notarized. Actual downloading, installation on
+quit, relaunch, and deadline/settings preservation require two notarized builds
+and a working published feed; these checks remain outstanding. The earlier idle
+measurements predate Sparkle.
