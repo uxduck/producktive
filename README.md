@@ -13,17 +13,21 @@ silicon and Intel.
 ## Install
 
 Download the universal app from [Releases](https://github.com/UXDuck/producktive/releases),
-unzip it, and move **Producktive.app** into Applications. Open it and choose your
-Markdown deadline file.
+unzip it, and move **Producktive.app** into Applications. Open it to start with
+the default Markdown deadline file, or use **Choose file…** to select your own.
 
-Close the window and the countdown keeps running in the menu bar, without a Dock
-icon. Open the app again to bring the window back. Enable **Launch at login** to
+Close the window and the countdown keeps running in the menu bar. The Dock icon
+is visible by default; turn off **Show Dock icon** in Settings to hide it.
+Open the app again to bring the window back. Enable **Launch at login** to
 start it quietly in the menu bar when you log in.
 
-On first launch, the app creates an empty `~/.producktive/deadlines.md` if you don't
-already have a config or default file. Add deadlines with your agent, a text
-editor, or the bundled CLI. Try [the example file](examples/deadlines.md) if you'd
-like to see the format; its deadlines are fictional.
+On first use, the app or CLI creates `~/.producktive/deadlines.md` with two
+clearly labelled fictional examples: a design workshop and a project launch,
+each with a goal. Their dates are one and two weeks ahead so you can see the
+countdowns immediately. Replace or remove them as you add your own deadlines
+with your agent, a text editor, or the bundled CLI. Existing files and configured
+selections are preserved. [The example file](examples/deadlines.md) shows more
+of the format.
 
 To build and install from source, use Xcode 15+ or Swift 5.9+:
 
@@ -86,6 +90,11 @@ Cursor. Your agent can add deadlines, reschedule them, and update goal progress
 using the CLI at `~/.producktive/bin/producktive-cli`. The installer shows where
 each skill goes and won't overwrite an unrelated skill.
 
+Every data command automatically uses the file selected in the app. You don't
+need to supply its path or read the config. If you've never selected a file,
+the CLI creates `~/.producktive/deadlines.md` with the two starter examples on
+first use.
+
 | Agent | User skill directory | Official documentation |
 |---|---|---|
 | Codex | `~/.agents/skills/producktive` | [Codex skills](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills) |
@@ -99,14 +108,23 @@ to Cursor too.
 ```sh
 ~/.producktive/bin/producktive-cli validate
 ~/.producktive/bin/producktive-cli list
+~/.producktive/bin/producktive-cli show
+~/.producktive/bin/producktive-cli path
 ~/.producktive/bin/producktive-cli reschedule review-id '2027-04-15T10:00:00'
 ~/.producktive/bin/producktive-cli goal review-id feedback-id 12 active
 ~/.producktive/bin/producktive-cli complete review-id 'Review held.'
 ```
 
 Use `add-event` with a JSON event, or `add-goal` with an event ID and JSON goal.
-Pass `--file /absolute/path/deadlines.md` to use a different file for any data
-command. [The bundled skill](skills/producktive/SKILL.md) has more examples.
+`show` prints the full Markdown document, including notes; `path` prints the
+resolved location. Use `--help` for the command list or `COMMAND --help` for
+individual usage, without loading a deadline file.
+
+Pass `--file /absolute/path/deadlines.md` for a one-command override, or run
+`configure /absolute/path/deadlines.md` once to change the file used by both the
+app and future commands. A missing or invalid selected file reports an error;
+the CLI won't silently switch to a different file.
+[The bundled skill](skills/producktive/SKILL.md) has more examples.
 
 ## Troubleshooting
 

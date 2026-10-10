@@ -11,6 +11,12 @@ import ProducktiveCore
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published private(set) var dropdownOpen = false
     @Published var skillMessage: String?
+    @Published var showDockIcon = true {
+        didSet {
+            UserDefaults.standard.set(showDockIcon, forKey: "showDockIcon")
+            applyDockVisibility()
+        }
+    }
     @Published var titleCharacterLimit: Int = 24 {
         didSet {
             let clamped = min(80, max(1, titleCharacterLimit))
@@ -35,6 +41,9 @@ import ProducktiveCore
     var label: String { engine.label(for: engine.selected(in: snapshot?.active ?? []), stale: error != nil, titleCharacterLimit: titleCharacterLimit) }
 
     init() {
+        if let savedDockVisibility = UserDefaults.standard.object(forKey: "showDockIcon") as? Bool {
+            showDockIcon = savedDockVisibility
+        }
         if let savedLimit = UserDefaults.standard.object(forKey: "menuBarTitleCharacterLimit") as? Int {
             titleCharacterLimit = min(80, max(1, savedLimit))
         }
@@ -55,6 +64,9 @@ import ProducktiveCore
         if CommandLine.arguments.contains("--preview-panel") {
             DispatchQueue.main.async { [weak self] in self?.showPreview() }
         }
+    }
+    func applyDockVisibility() {
+        NSApp.setActivationPolicy(showDockIcon ? .regular : .accessory)
     }
     func showDeadlineWindow() {
         if deadlineWindow == nil {

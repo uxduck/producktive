@@ -8,7 +8,7 @@ if [[ -n "${SIGNING_IDENTITY:-}" && "$SIGNING_IDENTITY" != "-" ]]; then
   codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$app/Contents/Resources/bin/producktive-cli"
   codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$app"
 fi
-archive="dist/Producktive-0.2.0-universal.zip"
+archive="dist/Producktive-0.2.1-universal.zip"
 ditto -c -k --keepParent "$app" "$archive"
 notary_arguments=()
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then

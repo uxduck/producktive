@@ -3,19 +3,24 @@ name: producktive
 description: Manage local Producktive deadlines and their linked goals. Use to add, reschedule, complete, or archive events, update manual progress, or inspect upcoming and overdue deadlines.
 ---
 
-Resolve `~/.producktive/config.yaml` first. Its `deadlines_file` overrides
-`~/.producktive/deadlines.md` completely; expand `~` and require an absolute path.
-Read both active and archived records and the Markdown notes before making changes.
-
 Use `~/.producktive/bin/producktive-cli` for validated, comment-preserving edits.
-Run `validate` before and after a change. Each command resolves the config unless
-`--file /absolute/path/deadlines.md` is supplied. Arguments containing spaces,
-JSON, or timestamps must be passed as literal quoted arguments, without shell
+Commands automatically use the file selected in the app; do not ask the user for
+its path or manually resolve the config. On first use, the app or CLI creates a
+default document with two labelled fictional examples if no file or config exists.
+Treat these as sample data, not the user's commitments; replace or remove them
+when the user asks. Use `show` to read both active and
+archived records and the Markdown notes before making changes. Use `path` only
+when you need the resolved file location. Run `validate` before and after a change.
+Use `--file /absolute/path/deadlines.md` only when the user requests a different
+file for that command; `configure PATH` changes the app's selection persistently.
+A missing or invalid selected file is an error; never fall back to another file.
+Arguments containing spaces, JSON, or timestamps must be passed as literal
+quoted arguments, without shell
 interpolation of user text.
 
 Commands:
 
-- `list` or `validate`
+- `list`, `show`, `path`, or `validate`
 - `add-event '{"id":"fictional-review-2027-04-15","title":"Prototype review","at":"2027-04-15T10:00:00"}'`
 - `add-goal EVENT_ID '{"id":"fictional-review-notes","title":"Write review notes","target":10,"unit":"notes","current":null,"status":"active"}'`
 - `reschedule EVENT_ID '2027-04-16T10:00:00' ['2027-04-16T11:00:00']`
@@ -44,6 +49,9 @@ Preserve date uncertainty. Ask for the missing date or record the uncertainty in
 notes; do not invent meetings, attendance, progress values, or achieved status.
 Never commit a user's deadline file or config to a public repository.
 
+If the CLI is unavailable, resolve `~/.producktive/config.yaml` first: its
+`deadlines_file` overrides `~/.producktive/deadlines.md`; expand `~` and require
+an absolute path. Read the full document before making changes.
 If the CLI is unavailable or a change needs direct editing, preserve the Markdown
 body, wiki-links, YAML comments, unknown fields, unrelated records, and IDs. Re-read
 before committing, compare with the original bytes, keep a recoverable backup,

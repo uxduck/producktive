@@ -2,10 +2,51 @@ import Foundation
 import ProducktiveCore
 
 func fail(_ message: String) -> Never { FileHandle.standardError.write(Data((message + "\n").utf8)); exit(1) }
+let usage = """
+Usage: producktive-cli COMMAND [ARGUMENTS]
+
+Uses the file selected in Producktive, or ~/.producktive/deadlines.md on first use.
+No file argument is needed. Use --file PATH for a one-command override.
+
+Commands:
+  path                              Print the selected deadline file path
+  show                              Print the full Markdown document and notes
+  list                              List active and archived deadlines
+  validate                          Validate the deadline document
+  add-event JSON_EVENT               Add a deadline
+  add-goal EVENT_ID JSON_GOAL         Add a goal to a deadline
+  reschedule ID TIMESTAMP [END]      Change a deadline's date
+  goal EVENT_ID GOAL_ID CURRENT_OR_null STATUS
+  complete ID REASON                 Complete a deadline
+  archive ID REASON                  Archive a deadline
+  configure PATH                    Select a file for the app and future commands
+  install-skills --resources PATH codex|claude|cursor ...
+
+Run producktive-cli COMMAND --help for command usage.
+"""
+let commandUsage = [
+    "path": "path [--file PATH]", "show": "show [--file PATH]",
+    "list": "list [--file PATH]", "validate": "validate [--file PATH]",
+    "archive": "archive [--file PATH] ID REASON", "complete": "complete [--file PATH] ID REASON",
+    "reschedule": "reschedule [--file PATH] ID TIMESTAMP [END_TIMESTAMP]",
+    "goal": "goal [--file PATH] EVENT_ID GOAL_ID CURRENT_OR_null STATUS",
+    "add-event": "add-event [--file PATH] JSON_EVENT", "add-goal": "add-goal [--file PATH] EVENT_ID JSON_GOAL",
+    "configure": "configure /absolute/path/deadlines.md",
+    "install-skills": "install-skills --resources PATH [--home PATH] codex|claude|cursor ..."
+]
 do {
     var args = Array(CommandLine.arguments.dropFirst())
-    guard let command = args.first else { fail("Usage: producktive-cli validate|list|archive|complete|reschedule|goal|add-event|add-goal [--file /path/deadlines.md] ...") }
+    guard let command = args.first else { print(usage); exit(0) }
     args.removeFirst()
+    if command == "--help" || command == "-h" || command == "help" { print(usage); exit(0) }
+    guard let detail = commandUsage[command] else { fail("Unknown command: \(command). Run producktive-cli --help.") }
+    if args.contains("--help") || args.contains("-h") {
+        print("Usage: producktive-cli \(detail)")
+        if command != "configure" && command != "install-skills" {
+            print("\nUses the app's selected file unless --file PATH is supplied.")
+        }
+        exit(0)
+    }
     if command == "install-skills" {
         var home = FileManager.default.homeDirectoryForCurrentUser
         if let index = args.firstIndex(of: "--home"), args.indices.contains(index + 1) {
@@ -24,15 +65,26 @@ do {
         try FileStore.chooseDeadlineFile(try Config(deadlines_file: args[0]).deadlinesURL())
         print("Configured selected deadline file."); exit(0)
     }
-    let file: URL
+    var override: String?
     if let flag = args.firstIndex(of: "--file") {
         guard args.filter({ $0 == "--file" }).count == 1, args.indices.contains(flag + 1), !args[flag + 1].hasPrefix("--") else { fail("--file requires one absolute path.") }
-        file = try Config(deadlines_file: args[flag + 1]).deadlinesURL()
+        override = args[flag + 1]
         args.removeSubrange(flag...(flag + 1))
-    } else { file = try Config.read().deadlinesURL() }
+    }
+    let file = try FileStore.deadlineURL(override: override)
+    if command == "path" {
+        guard args.isEmpty else { fail("Usage: \(detail)") }
+        print(file.path); exit(0)
+    }
+    guard FileManager.default.fileExists(atPath: file.path) else {
+        fail("Deadline file not found: \(file.path). Select an existing file with producktive-cli configure PATH or Choose file… in the app.")
+    }
     let revision = try FileRevision(url: file)
     let snapshot = revision.document.snapshot
     switch command {
+    case "show":
+        guard args.isEmpty else { fail("Usage: \(detail)") }
+        FileHandle.standardOutput.write(revision.bytes)
     case "validate":
         guard args.isEmpty else { fail("Usage: validate [--file PATH]") }
         print("Valid version 1 document: \(snapshot.active.count) active, \(snapshot.archived.count) archived.")

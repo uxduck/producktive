@@ -14,6 +14,13 @@ public struct FileRevision: Sendable {
 }
 
 public enum FileStore {
+    /// Uses the app's selected file, creating the default document on first use.
+    /// An explicit override never changes the selection or creates a default file.
+    public static func deadlineURL(override: String? = nil, home: URL = FileManager.default.homeDirectoryForCurrentUser) throws -> URL {
+        if let override { return try Config(deadlines_file: override).deadlinesURL(home: home) }
+        try bootstrap(home: home)
+        return try Config.read(home: home).deadlinesURL(home: home)
+    }
     /// Coordinates cooperating editors, rechecks original bytes, keeps a backup, and atomically renames.
     @discardableResult public static func apply(_ edit: MarkdownDocument.Edit, to revision: FileRevision,
                                                beforeCommit: (() throws -> Void)? = nil) throws -> FileRevision {
@@ -56,16 +63,69 @@ public enum FileStore {
         }
         if let error = operationError ?? coordinationError { throw error }
     }
-    public static func bootstrap(home: URL = FileManager.default.homeDirectoryForCurrentUser) throws {
+    public static func bootstrap(home: URL = FileManager.default.homeDirectoryForCurrentUser, now: Date = Date()) throws {
         let manager = FileManager.default
         let directory = Config.directory(home: home)
         let configURL = directory.appendingPathComponent("config.yaml")
         let deadlineURL = directory.appendingPathComponent("deadlines.md")
         guard !manager.fileExists(atPath: configURL.path), !manager.fileExists(atPath: deadlineURL.path) else { return }
         try manager.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-        let text = "---\nversion: 1\ntimezone: \"America/Los_Angeles\"\ncountdown_decimals: 1\nactive: []\narchived: []\n---\n\n# Deadline notes\n"
+        let text = starterDocument(now: now)
         _ = try MarkdownDocument(text)
         try replace(url: deadlineURL, expected: nil, new: Data(text.utf8))
+    }
+    private static func starterDocument(now: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        let workshopDate = formatter.string(from: calendar.date(byAdding: .day, value: 7, to: now)!)
+        let launchDate = formatter.string(from: calendar.date(byAdding: .day, value: 14, to: now)!)
+        return """
+        ---
+        version: 1
+        timezone: "America/Los_Angeles"
+        countdown_decimals: 1
+        # Fictional examples; replace these with your own deadlines and goals.
+        active:
+          - id: "example-workshop"
+            title: "Example: Design workshop"
+            at: "\(workshopDate)T10:00:00"
+            ends_at: "\(workshopDate)T11:00:00"
+            goals:
+              - id: "example-workshop-notes"
+                title: "Prepare discussion notes"
+                target: 5
+                unit: "notes"
+                current: 0
+                status: "active"
+          - id: "example-launch"
+            title: "Example: Project launch"
+            at: "\(launchDate)"
+            goals:
+              - id: "example-launch-tasks"
+                title: "Finish the launch checklist"
+                target: 3
+                unit: "tasks"
+                current: null
+                status: "active"
+        archived: []
+        ---
+
+        # Your deadlines
+
+        These two fictional examples show a timed deadline, a date-only deadline,
+        and goals with progress. Their dates are one and two weeks from first use.
+        Replace or remove them when you add your own deadlines. Date-only deadlines
+        start at midnight in the timezone above.
+
+        Keep your project notes here. Markdown and [[wiki-links]] are preserved
+        when you update deadlines through the app or CLI.
+
+        """
     }
     public static func chooseDeadlineFile(_ url: URL, home: URL = FileManager.default.homeDirectoryForCurrentUser) throws {
         _ = try FileRevision(url: url)

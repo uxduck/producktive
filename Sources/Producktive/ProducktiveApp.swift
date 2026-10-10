@@ -15,6 +15,8 @@ import ProducktiveCore
     let model = AppModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Apply the saved preference after SwiftUI has established its menu bar scene.
+        model.applyDockVisibility()
         let event = NSAppleEventManager.shared().currentAppleEvent
         let loginLaunch = event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
         if !loginLaunch, !CommandLine.arguments.contains("--preview-panel") {
@@ -67,7 +69,7 @@ struct DeadlinePanel: View {
                             ForEach(snapshot.archived) { event in EventRow(event: event, archived: true, model: model) }
                         }
                     }.padding(.trailing, 6)
-                }.frame(height: min(max(140, 480 - (showSettings ? 130 : 0) - (showAgents ? 180 : 0)), max(140, CGFloat(snapshot.active.count) * 170 + 50)))
+                }.frame(height: min(max(140, 480 - (showSettings ? 160 : 0) - (showAgents ? 180 : 0)), max(140, CGFloat(snapshot.active.count) * 170 + 50)))
             } else if model.error == nil { ProgressView("Loading deadlines…") }
             Divider()
             HStack {
@@ -90,6 +92,7 @@ struct DeadlinePanel: View {
                     }
                     Text("Limits the menu bar title, including the ellipsis.").font(.caption).foregroundStyle(.secondary)
                     Text(model.label).font(.caption.monospaced()).textSelection(.enabled)
+                    Toggle("Show Dock icon", isOn: $model.showDockIcon)
                     Toggle("Launch at login", isOn: $model.launchAtLogin).onChange(of: model.launchAtLogin) { _ in model.toggleLogin() }
                 }.padding(.top, 6)
             }

@@ -229,6 +229,37 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(try Config(deadlines_file: "~/custom.md").deadlinesURL(home: home), url)
         XCTAssertThrowsError(try Config(deadlines_file: "relative.md").deadlinesURL(home: home))
     }
+    func testDeadlineURLUsesAppSelectionAndBootstrapsFirstUse() throws {
+        let home = try temporary()
+        let defaultURL = try FileStore.deadlineURL(home: home)
+        XCTAssertEqual(defaultURL, try Config().deadlinesURL(home: home))
+        XCTAssertEqual(try FileRevision(url: defaultURL).document.snapshot.active.count, 2)
+
+        let custom = home.appendingPathComponent("My deadlines.md")
+        try fixture.write(to: custom, atomically: true, encoding: .utf8)
+        try FileStore.chooseDeadlineFile(custom, home: home)
+        XCTAssertEqual(try FileStore.deadlineURL(home: home), custom)
+        XCTAssertEqual(try FileStore.deadlineURL(override: defaultURL.path, home: home), defaultURL)
+        XCTAssertEqual(try FileStore.deadlineURL(home: home), custom)
+
+        try FileManager.default.removeItem(at: custom)
+        XCTAssertEqual(try FileStore.deadlineURL(home: home), custom)
+        XCTAssertThrowsError(try FileRevision(url: FileStore.deadlineURL(home: home)))
+    }
+    func testDeadlineURLOverrideDoesNotInitializeOrReadConfig() throws {
+        let home = try temporary()
+        let custom = home.appendingPathComponent("custom.md")
+        XCTAssertEqual(try FileStore.deadlineURL(override: "~/custom.md", home: home), custom)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: Config.directory(home: home).path))
+        XCTAssertThrowsError(try FileStore.deadlineURL(override: "relative.md", home: home))
+
+        let directory = Config.directory(home: home)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try "deadlines_file: [invalid".write(to: directory.appendingPathComponent("config.yaml"), atomically: true, encoding: .utf8)
+        XCTAssertEqual(try FileStore.deadlineURL(override: custom.path, home: home), custom)
+        XCTAssertThrowsError(try FileStore.deadlineURL(home: home))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: directory.appendingPathComponent("deadlines.md").path))
+    }
     func testSkillInstallAndConflictPreflight() throws {
         let home = try temporary(), resources = try temporary()
         let skill = resources.appendingPathComponent("skills/producktive")
@@ -274,9 +305,19 @@ final class CoreTests: XCTestCase {
     }
     func testFirstRunAndConfigQuotedPathComments() throws {
         let home = try temporary()
-        try FileStore.bootstrap(home: home)
+        let firstUse = try date("2026-12-28T12:00:00")
+        try FileStore.bootstrap(home: home, now: firstUse)
         let url = try Config().deadlinesURL(home: home)
-        XCTAssertTrue(try FileRevision(url: url).document.snapshot.active.isEmpty)
+        let starter = try FileRevision(url: url).document
+        XCTAssertEqual(starter.snapshot.active.map(\.event.at), ["2027-01-04T10:00:00", "2027-01-11"])
+        XCTAssertTrue(starter.snapshot.active.allSatisfy { $0.date > firstUse && $0.event.title.hasPrefix("Example:") })
+        XCTAssertTrue(starter.snapshot.active.allSatisfy { $0.event.goals?.count == 1 })
+        XCTAssertTrue(starter.snapshot.archived.isEmpty)
+        let completed = try starter.editing(.archive(id: "example-workshop", status: "completed", reason: "Replaced example"))
+        XCTAssertEqual(completed.snapshot.active.count, 1)
+        XCTAssertTrue(completed.text.contains("These two fictional examples"))
+        try FileStore.bootstrap(home: home, now: try date("2027-02-01"))
+        XCTAssertEqual(try String(contentsOf: url, encoding: .utf8), starter.text)
         try (fixture + "\nPersonal notes\n").write(to: url, atomically: true, encoding: .utf8)
         try FileStore.bootstrap(home: home)
         XCTAssertTrue(try String(contentsOf: url, encoding: .utf8).contains("Personal notes"))
@@ -286,6 +327,24 @@ final class CoreTests: XCTestCase {
         XCTAssertTrue(changed.contains("other: keep"))
         XCTAssertFalse(changed.contains("old # file.md"))
         XCTAssertThrowsError(try MarkdownDocument.settingDeadlinePath("/tmp/new.md", in: "{deadlines_file: '/tmp/old.md', other: keep}"))
+    }
+    func testBootstrapPreservesEmptyFileAndConfiguredOverride() throws {
+        let home = try temporary()
+        let directory = Config.directory(home: home)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("deadlines.md")
+        try Data().write(to: url)
+        try FileStore.bootstrap(home: home)
+        XCTAssertEqual(try Data(contentsOf: url), Data())
+
+        try FileManager.default.removeItem(at: url)
+        let custom = home.appendingPathComponent("custom.md")
+        try fixture.write(to: custom, atomically: true, encoding: .utf8)
+        try FileStore.chooseDeadlineFile(custom, home: home)
+        try FileStore.bootstrap(home: home)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertEqual(try String(contentsOf: custom, encoding: .utf8), fixture)
+        XCTAssertEqual(try FileStore.deadlineURL(home: home), custom)
     }
     func testWatcherRecoversAfterDeletionAndDirectoryReplacement() throws {
         let parent = try temporary()
