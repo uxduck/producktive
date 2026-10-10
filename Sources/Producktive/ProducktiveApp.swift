@@ -144,6 +144,8 @@ struct EventRow: View {
             ForEach(event.event.goals ?? []) { goal in GoalRow(goal: goal, eventID: event.id, archived: archived, model: model) }
             if archived {
                 Text("\(event.event.status ?? "archived") · \(event.event.archive_reason ?? "")").font(.caption).foregroundStyle(.secondary)
+                Button("Restore") { model.edit(.restore(id: event.id)) }
+                    .font(.caption).disabled(model.error != nil)
             } else {
                 HStack {
                     Button("Mark complete") { model.edit(.archive(id: event.id, status: "completed", reason: "Marked complete in Producktive.")) }

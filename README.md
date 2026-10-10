@@ -61,6 +61,9 @@ changes, and you can still see the original deadline time. Completing a deadline
 keeps its goals' progress and status as they were; it doesn't mark the goals as
 achieved.
 
+Choose **Restore** under Archived to bring a completed or archived deadline back.
+Its date, goals, and progress stay as they were.
+
 See [the file schema](docs/schema.md) for the fields and how edits are saved safely.
 
 ## Choose a file

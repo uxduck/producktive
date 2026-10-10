@@ -82,3 +82,17 @@ full titles/countdowns, and a 10-character preference after quitting and relaunc
 The deadline list shrinks when settings expand so footer controls stay visible.
 The existing 17 core tests and the signed universal build passed. The local app
 was updated with this setting; notarization remains pending for the draft release.
+
+October 10 release 0.2.0: the core suite passed all 19 tests, including restoring
+completed or archived deadlines while preserving their dates, goals, progress,
+comments, and unrelated Markdown data. The app uses the selected white-and-yellow
+call-duck icon; the menu bar remains text-only. Packaging generates all standard
+macOS icon resolutions with alpha.
+
+The release build contains arm64 and x86_64 slices, both targeting macOS 13.0.
+The packaged CLI validated the fictional example (two active, one archived).
+The app and CLI are signed with the DUCKTYPE LIMITED Developer ID and secure
+timestamps. Apple accepted notarization (submission
+`e0a1722e-81af-4e51-b37f-bcb3a9a15a8f`); stapler validation and Gatekeeper
+assessment passed. The universal ZIP and SHA-256 checksum were regenerated after
+stapling. No new Intel hardware or minimum-version live UI check was performed.

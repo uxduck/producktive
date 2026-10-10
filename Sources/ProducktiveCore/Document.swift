@@ -42,6 +42,7 @@ public struct MarkdownDocument: @unchecked Sendable {
     }
     public enum Edit: Sendable {
         case archive(id: String, status: String, reason: String)
+        case restore(id: String)
         case reschedule(id: String, at: String, endsAt: String?)
         case goal(eventID: String, goalID: String, current: Double?, status: String)
         case addEvent(Event)
@@ -65,6 +66,16 @@ public struct MarkdownDocument: @unchecked Sendable {
             // Reparse so positions remain correct even when archived precedes active.
             let intermediate = try MarkdownDocument(output.joined(separator: "\n"))
             output = try intermediate.appending(block: block, to: "archived")
+        case let .restore(id):
+            let (node, range) = try record(id: id, section: "archived")
+            let block = try restoredBlock(node: node, range: range)
+            output.removeSubrange(range)
+            if try list("archived").count == 1 {
+                let line = try keyLine("archived")
+                output[line] = try emptyListLine(output[line])
+            }
+            let intermediate = try MarkdownDocument(output.joined(separator: "\n"))
+            output = try intermediate.appending(block: block, to: "active")
         case let .reschedule(id, at, endsAt):
             let (node, range) = try record(id: id, section: "active")
             var block = Array(lines[range])
@@ -117,6 +128,36 @@ public struct MarkdownDocument: @unchecked Sendable {
             }
         }
         return try MarkdownDocument(output.joined(separator: "\n"))
+    }
+    private func restoredBlock(node: Node, range: Range<Int>) throws -> [String] {
+        let fields = Set(["status", "archive_reason"])
+        var removedLines = Set<Int>()
+        var comments: [Int: String] = [:]
+        let indent = String(repeating: " ", count: (node.mark?.column ?? 1) - 1)
+        for (key, value) in node.mapping ?? [:] where fields.contains(key.string ?? "") {
+            guard let keyMark = key.mark, let valueMark = value.mark,
+                  value.scalar != nil, keyMark.line == valueMark.line else {
+                throw ProducktiveError("Archive metadata must use single-line scalars before restoring.")
+            }
+            let index = yamlStart + keyMark.line - 1
+            let suffix = String(String.UnicodeScalarView(lines[index].unicodeScalars.dropFirst(valueMark.column - 1)))
+            let length = try Self.scalarLength(suffix)
+            let trailing = String(String.UnicodeScalarView(suffix.unicodeScalars.dropFirst(length))).trimmingCharacters(in: .whitespacesAndNewlines)
+            if trailing.hasPrefix("#") { comments[index] = indent + trailing + (lines[index].hasSuffix("\r") ? "\r" : "") }
+            removedLines.insert(index)
+        }
+        let firstField = node.mapping?.compactMap { key, _ -> Int? in
+            guard !fields.contains(key.string ?? ""), let mark = key.mark else { return nil }
+            return yamlStart + mark.line - 1
+        }.min()
+        let sequenceIndent = String(lines[range.lowerBound].prefix { $0 == " " })
+        return range.compactMap { index in
+            if removedLines.contains(index) { return comments[index] }
+            if removedLines.contains(range.lowerBound), index == firstField {
+                return sequenceIndent + "- " + lines[index].drop(while: { $0 == " " })
+            }
+            return lines[index]
+        }
     }
     private static func sequenceBlock(_ encoded: String, indent: Int) -> [String] {
         encoded.components(separatedBy: "\n").enumerated().map { index, line in

@@ -14,6 +14,17 @@ cp -R skills/producktive "$app/Contents/Resources/skills/"
 cp examples/* "$app/Contents/Resources/examples/"
 cp LICENSE "$app/Contents/Resources/LICENSE"
 cp .build/checkouts/Yams/LICENSE "$app/Contents/Resources/Yams-LICENSE"
+# Generate every macOS icon size from the selected call-duck artwork.
+icon_work_dir="$(mktemp -d "${TMPDIR:-/tmp}/producktive-icons.XXXXXX")"
+trap 'rm -rf "$icon_work_dir"' EXIT
+iconset="$icon_work_dir/AppIcon.iconset"
+mkdir -p "$iconset"
+for size in 16 32 128 256 512; do
+  sips -z "$size" "$size" images/AppIcon.png --out "$iconset/icon_${size}x${size}.png" >/dev/null
+  retina_size=$((size * 2))
+  sips -z "$retina_size" "$retina_size" images/AppIcon.png --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
 cat > "$app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -22,9 +33,10 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <key>CFBundleName</key><string>Producktive</string>
 <key>CFBundleDisplayName</key><string>Producktive</string>
 <key>CFBundleExecutable</key><string>Producktive</string>
+<key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.1</string>
-<key>CFBundleVersion</key><string>2</string>
+<key>CFBundleShortVersionString</key><string>0.2.0</string>
+<key>CFBundleVersion</key><string>3</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>

@@ -117,6 +117,51 @@ final class CoreTests: XCTestCase {
         XCTAssertTrue(empty.snapshot.active.isEmpty)
         XCTAssertEqual(empty.snapshot.archived.count, 2)
     }
+    func testRestorePreservesRecordAndSupportsRearchiving() throws {
+        let original = try MarkdownDocument(fixture)
+        let archived = try original.editing(.archive(id: "first", status: "completed", reason: "Accidental click."))
+        let restored = try archived.editing(.restore(id: "first"))
+        XCTAssertEqual(restored.snapshot.active.map(\.id), ["first", "second"])
+        XCTAssertTrue(restored.snapshot.archived.isEmpty)
+        XCTAssertEqual(restored.snapshot.active[0].event, original.snapshot.active[0].event)
+        XCTAssertEqual(restored.snapshot.active[0].date, original.snapshot.active[0].date)
+        for marker in ["# title comment", "# time comment", "# progress comment", "# archive section comment", "# archive header comment", "extra_setting: \"keep me\" # untouched", "extra_goal: \"retain\"", "unknown multiline text\n      keep this too", "Keep [[Project notes]] and 🦆 intact."] {
+            XCTAssertTrue(restored.text.contains(marker), marker)
+        }
+        XCTAssertThrowsError(try restored.editing(.restore(id: "first")))
+        let archivedAgain = try restored.editing(.archive(id: "first", status: "archived", reason: "Later."))
+        XCTAssertEqual(archivedAgain.snapshot.archived[0].event.goals, original.snapshot.active[0].event.goals)
+    }
+    func testRestoreIntoEmptyActivePreservesArchiveMetadataComments() throws {
+        let text = """
+        ---
+        version: 1
+        timezone: America/Los_Angeles
+        countdown_decimals: 1
+        archived:
+          - status: completed # status comment
+            archive_reason: "Accidental # click" # reason comment
+            id: restored
+            title: Restored deadline
+            at: "2020-01-01"
+        active: [] # active header
+        ---
+        Notes remain.
+        """
+        let restored = try MarkdownDocument(text).editing(.restore(id: "restored"))
+        XCTAssertTrue(restored.snapshot.archived.isEmpty)
+        XCTAssertEqual(restored.snapshot.active.map(\.id), ["restored"])
+        XCTAssertNil(restored.snapshot.active[0].event.status)
+        XCTAssertNil(restored.snapshot.active[0].event.archive_reason)
+        for marker in ["# status comment", "# reason comment", "# active header", "Notes remain."] {
+            XCTAssertTrue(restored.text.contains(marker), marker)
+        }
+        let engine = CountdownEngine(clock: { Date(timeIntervalSince1970: 1_800_000_000) })
+        XCTAssertTrue(engine.label(for: restored.snapshot.active[0]).contains("overdue"))
+        XCTAssertNoThrow(try restored.editing(.reschedule(id: "restored", at: "2027-01-01", endsAt: nil)))
+        let multiline = text.replacingOccurrences(of: "archive_reason: \"Accidental # click\" # reason comment", with: "archive_reason: |\n      Accidental click")
+        XCTAssertThrowsError(try MarkdownDocument(multiline).editing(.restore(id: "restored")))
+    }
     func testReschedulingAndGoalEdits() throws {
         let original = try MarkdownDocument(fixture)
         let updated = try original.editing(.reschedule(id: "first", at: "2027-05-01T10:00:00", endsAt: nil))
