@@ -1,20 +1,29 @@
 # Producktive
 
-A native Mac menu bar app that keeps deadlines and their goals visible. Local
-Markdown data, decimal-day countdowns, and overdue events that remain visible
-until you resolve them. macOS 13 or later, Apple silicon and Intel.
+Deadline stress amplification tool to make you pro duck tive.
+
+Put your deadlines in the Mac menu bar and watch the days disappear, one decimal
+place at a time. Each deadline has goals, so you can see what needs doing as well
+as how little time you've got left. Miss one and it stays there until you complete
+or archive it.
+
+Everything lives in a local Markdown file. Works on macOS 13 or later, on Apple
+silicon and Intel.
 
 ## Install
 
 Download the universal app from [Releases](https://github.com/UXDuck/producktive/releases),
-unzip, and move **Producktive.app** into Applications. Launch it and choose your
-Markdown deadline file. Opening the app shows its deadline window, and reopening
-it brings that window back. Closing the window leaves the countdown running in
-the menu bar without a Dock icon. Login launches run quietly in the menu bar.
+unzip it, and move **Producktive.app** into Applications. Open it and choose your
+Markdown deadline file.
 
-First launch creates an empty `~/.producktive/deadlines.md` if no config or default
-file exists. Add your deadlines with an agent, a text editor, or the bundled CLI.
-[examples/deadlines.md](examples/deadlines.md) contains fictional data only.
+Close the window and the countdown keeps running in the menu bar, without a Dock
+icon. Open the app again to bring the window back. Enable **Launch at login** to
+start it quietly in the menu bar when you log in.
+
+On first launch, the app creates an empty `~/.producktive/deadlines.md` if you don't
+already have a config or default file. Add deadlines with your agent, a text
+editor, or the bundled CLI. Try [the example file](examples/deadlines.md) if you'd
+like to see the format; its deadlines are fictional.
 
 To build and install from source, use Xcode 15+ or Swift 5.9+:
 
@@ -25,32 +34,34 @@ scripts/install.sh codex claude cursor
 open "$HOME/Applications/Producktive.app"
 ```
 
-Open `Package.swift` in Xcode to browse the reusable core, application, CLI, and
-tests. `scripts/build-app.sh` assembles a universal native `.app`; no generated
-Xcode project or third-party project generator is required. Yams 6.2.2 is the
-sole package dependency, pinned by `Package.resolved`.
+Open `Package.swift` in Xcode to browse the core, app, CLI, and tests. The build
+script makes a universal native `.app` without generating an Xcode project.
+Yams 6.2.2 is the only package dependency, pinned in `Package.resolved`.
 
 ## Deadlines
 
 ![Native deadline panel with fictional records](docs/screenshot.png)
 
-The menu bar selects the earliest unresolved active event. Overdue events take
-precedence and stay active until **Mark complete** or **Archive**. Ties use stable
-IDs. Long titles are truncated in the menu bar and displayed fully in the panel.
-Every active row shows its own countdown, exact date/time, and goals.
+The menu bar shows your earliest unresolved active deadline. Overdue deadlines
+come first and stay until you choose **Mark complete** or **Archive**. If two
+deadlines have the same time, their stable IDs decide the order. Open the panel
+to see each active deadline's full title, countdown, exact date and time, and goals.
 
-Expand **Settings** in the dropdown to change **Title length** from 1 to 80
-characters, including the ellipsis. The menu bar updates immediately and remembers
-your choice. The countdown and full titles in the dropdown remain visible.
+Long titles are shortened in the menu bar. Under **Settings**, set **Title length**
+to anything from 1 to 80 characters, including the ellipsis. It updates straight
+away and remembers your choice. You can still see the countdown and full titles
+in the dropdown.
 
-Days are remaining seconds divided by 86,400, displayed with one decimal at every
-distance. The displayed magnitude has an explicit “overdue” suffix after arrival.
-A rounded `0.0 days` can still be upcoming. DST does not redefine a day. Dates
-default to Pacific midnight; travel changes the displayed local time, while the
-original event time remains visible. Completing an event preserves each goal's
-progress and status without claiming the goal was achieved.
+The countdown divides the seconds left by 86,400 and shows one decimal place.
+Once a deadline passes, it says “overdue”. Rounding means `0.0 days` can still be
+upcoming, and a day stays 24 hours across daylight saving changes.
 
-See [the file schema](docs/schema.md) for fields and safe-write behavior.
+Dates default to midnight Pacific time. If you travel, the displayed local time
+changes, and you can still see the original deadline time. Completing a deadline
+keeps its goals' progress and status as they were; it doesn't mark the goals as
+achieved.
+
+See [the file schema](docs/schema.md) for the fields and how edits are saved safely.
 
 ## Choose a file
 
@@ -60,15 +71,17 @@ See [the file schema](docs/schema.md) for fields and safe-write behavior.
 deadlines_file: "~/Documents/My deadlines.md"
 ```
 
-The selected file is the sole source. Relative paths are rejected. **Choose
-file…** validates a file before updating this setting. Config and deadline files
-are watched, including atomic replacement saves made by editors such as Obsidian.
+The app reads deadlines from the file you select. Use an absolute path;
+relative paths are rejected. **Choose file…** checks the file before saving your
+choice. The app watches both files for changes, including saves where an editor
+such as Obsidian replaces the file.
 
 ## Agent skill and CLI
 
-Use **Install agent skill** in the panel to select Codex, Claude Code, or Cursor.
-The installer reports each destination and refuses to overwrite unrelated skills.
-It installs a safe-edit CLI at `~/.producktive/bin/producktive-cli`.
+Choose **Install agent skill** in the panel, then select Codex, Claude Code, or
+Cursor. Your agent can add deadlines, reschedule them, and update goal progress
+using the CLI at `~/.producktive/bin/producktive-cli`. The installer shows where
+each skill goes and won't overwrite an unrelated skill.
 
 | Agent | User skill directory | Official documentation |
 |---|---|---|
@@ -76,8 +89,9 @@ It installs a safe-edit CLI at `~/.producktive/bin/producktive-cli`.
 | Claude Code | `~/.claude/skills/producktive` | [Claude skills](https://code.claude.com/docs/en/skills) |
 | Cursor | `~/.cursor/skills/producktive` | [Cursor skills](https://cursor.com/docs/skills) |
 
-Directories verified October 9, 2026. Codex and Cursor both discover the shared
-`.agents` directory; selecting Codex can also make the skill visible to Cursor.
+These directories were checked on 9 October 2026. Codex and Cursor both read the
+shared `.agents` directory, so installing for Codex can make the skill available
+to Cursor too.
 
 ```sh
 ~/.producktive/bin/producktive-cli validate
@@ -87,46 +101,49 @@ Directories verified October 9, 2026. Codex and Cursor both discover the shared
 ~/.producktive/bin/producktive-cli complete review-id 'Review held.'
 ```
 
-`add-event` accepts a JSON event; `add-goal` accepts an event ID and JSON goal.
-`--file /absolute/path/deadlines.md` overrides config for any data command.
-See [the bundled skill](skills/producktive/SKILL.md) for examples.
+Use `add-event` with a JSON event, or `add-goal` with an event ID and JSON goal.
+Pass `--file /absolute/path/deadlines.md` to use a different file for any data
+command. [The bundled skill](skills/producktive/SKILL.md) has more examples.
 
 ## Troubleshooting
 
-If the menu bar is crowded or the countdown is hidden behind the camera notch,
-open **Producktive.app** again from Applications or Spotlight to show the deadline
-window. The panel's **Open deadline window** button opens the same window.
+If the countdown is hidden behind the camera notch or your menu bar is crowded,
+open **Producktive.app** from Applications or Spotlight to see the deadline window.
+You can also use **Open deadline window** in the panel.
 
-Malformed edits keep the last valid snapshot with a persistent red **Stale data**
-message and a warning in the menu bar. Edit the file to correct the error or select
-a valid file. Mutating controls are disabled while stale. Empty files/lists and
-missing files are handled explicitly. The refresh button retries loading.
+If an edit breaks the file format, the app keeps showing the last valid version
+with a red **Stale data** message and a menu bar warning. Fix the file or choose a
+valid one. You can't make changes through the app while its data is stale. Empty
+or missing files get their own messages. Use the refresh button to try loading again.
 
-Ambiguous or nonexistent local DST times are rejected; supply a verified time or
-an explicit UTC offset. Duplicate IDs, unknown zones, and invalid intervals are
-also rejected. Archived records need both status and reason. YAML aliases and
-merge keys are unsupported. Flow-style records can be read, but edit them into
-block style before using app controls.
+Times that occur twice or don't exist during daylight saving changes are rejected.
+Use a verified time or an explicit UTC offset. IDs must be unique, time zones must
+be recognised, and intervals must be valid. Archived records need both a status
+and a reason. YAML aliases and merge keys aren't supported. The app can read
+flow-style records, but you'll need to change them to block style before editing
+them through the app.
 
-If an edit reports a conflict, reload and review the other editor's changes before
-retrying. Pre-edit `deadlines.md.backup-UUID` files are recoverable UTF-8 originals;
-keep or remove them manually. The app never silently deletes backups.
+If you get an edit conflict, reload and check the other editor's changes before
+trying again. Each `deadlines.md.backup-UUID` file contains the original UTF-8 file
+from before an edit. Keep or remove these yourself; the app doesn't delete them.
 
-**Launch at login** uses Apple's ServiceManagement registration. macOS may require
-approval in System Settings → General → Login Items. Install the app in Applications
-before enabling it. No network access, analytics, AI service, or per-row timer runs
-in the application.
+Install the app in Applications before enabling **Launch at login**. It uses Apple's
+ServiceManagement registration, which may need approval in System Settings →
+General → Login Items.
+
+The app has no network access, analytics, or AI service. It doesn't run a separate
+timer for every row either.
 
 ## Release and validation
 
-[Validation notes](docs/validation.md) record actual tests and performance results.
-Builds default to ad hoc signing; CI artifacts are not notarized. To produce a
+[Validation notes](docs/validation.md) cover the tests and measured performance.
+Builds use ad hoc signing by default, and CI artefacts aren't notarised. To make a
 Developer ID release, set `SIGNING_IDENTITY` and a `NOTARY_PROFILE` stored with
 `xcrun notarytool store-credentials`, then run `scripts/package-release.sh`.
-Alternatively, supply `APPLE_API_KEY_PATH`, `APPLE_API_KEY` (the key ID), and
+You can also use `APPLE_API_KEY_PATH`, `APPLE_API_KEY` (the key ID), and
 `APPLE_API_ISSUER` for App Store Connect API authentication. Keep credentials
-outside the repository. Packaging checks that Apple accepted notarization before
-stapling and verifies Gatekeeper acceptance.
-The release notes state the actual signing and notarization status.
+outside the repository. The packaging script checks Apple's notarisation result
+before stapling and verifies Gatekeeper acceptance. Check the release notes for
+that release's signing and notarisation status.
 
-MIT licensed. Public examples, tests, screenshots, and CI contain fictional data.
+MIT licensed. The public examples, tests, screenshots, and CI use fictional data.
