@@ -12,17 +12,32 @@ Unmanaged skills and agents never selected by the user are left untouched.
 ## Hosting
 
 R2 stores the feed and archives. It is separate from the updater framework.
-This follows DuckType's existing hosting at `https://updates.duck-type.com`,
-using the `ducktype-app-updates` bucket and rclone's `r2` remote:
+This follows DuckType's hosting approach with a separate Producktive bucket,
+`producktive-app-updates`, and its own public custom domain. Rclone's `producktive-r2` remote
+uses credentials scoped to the Producktive bucket:
 
-- Feed: `https://updates.duck-type.com/producktive/stable/appcast.xml`
-- Archives: `producktive/stable/Producktive-VERSION-BUILD-universal.zip`
+- Feed: `https://producktive-updates.duck-type.com/stable/appcast.xml`
+- Archives: `stable/Producktive-VERSION-BUILD-universal.zip`
 - One universal archive covers Apple silicon and Intel.
 
 DuckType uses `tauri-plugin-updater` with Minisign-signed updater archives,
 per-platform JSON manifests under `stable/` and `beta/`, and checks after startup
 and every four hours. Producktive uses Sparkle's XML appcast and Ed25519 signing.
-The two apps have separate signing keys and paths. No Tauri code is needed here.
+The two apps have separate signing keys, buckets, and domains. No Tauri code is needed here.
+
+Create the bucket in Cloudflare R2 and attach `producktive-updates.duck-type.com`
+as its custom domain. Create an R2 API token with **Object Read & Write**, scoped
+only to `producktive-app-updates`. In `rclone config`, create a new S3 remote
+named `producktive-r2` with provider Cloudflare, the generated Access Key ID and
+Secret Access Key, and the account's R2 S3 endpoint. Verify it with:
+
+```sh
+rclone lsf producktive-r2:producktive-app-updates --s3-no-check-bucket --max-depth 1
+```
+
+An empty bucket returns no objects and exits successfully. R2 credentials and
+notarization credentials are independent; a working Apple identity does not
+authenticate R2.
 
 ## Signing keys
 
@@ -76,7 +91,7 @@ and never deletes old objects. R2 credentials stay in the rclone configuration.
 
 Archives have `Cache-Control: public, max-age=31536000, immutable`; the feed has
 `no-cache, max-age=0, must-revalidate`. Cloudflare Cache Rules must respect these
-headers for `producktive/stable/appcast.xml` and must not override them with a
+headers for `stable/appcast.xml` and must not override them with a
 long edge TTL. If an existing rule cached that URL, purge it when first enabling
 the feed. See [Cloudflare's R2/rclone documentation](https://developers.cloudflare.com/r2/examples/rclone/).
 
