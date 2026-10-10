@@ -74,3 +74,11 @@ offscreen exports. The isolated app exited cleanly after the render check.
 Three ten-second-spaced samples of the final installed process reported 0.0%
 CPU, 34 MB memory, zero idle wakeups, and unchanged CPU time of 0.22 seconds.
 The standalone deadline window was retained during this locked-screen sample.
+
+Dropdown settings now support a menu bar title limit of 1–80 characters, including
+the ellipsis, persisted in native app preferences. Live UI checks on the unlocked
+Mac verified 5- and 10-character limits, immediate label preview updates, retained
+full titles/countdowns, and a 10-character preference after quitting and relaunching.
+The deadline list shrinks when settings expand so footer controls stay visible.
+The existing 17 core tests and the signed universal build passed. The local app
+was updated with this setting; notarization remains pending for the draft release.

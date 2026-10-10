@@ -39,6 +39,10 @@ precedence and stay active until **Mark complete** or **Archive**. Ties use stab
 IDs. Long titles are truncated in the menu bar and displayed fully in the panel.
 Every active row shows its own countdown, exact date/time, and goals.
 
+Expand **Settings** in the dropdown to change **Title length** from 1 to 80
+characters, including the ellipsis. The menu bar updates immediately and remembers
+your choice. The countdown and full titles in the dropdown remain visible.
+
 Days are remaining seconds divided by 86,400, displayed with one decimal at every
 distance. The displayed magnitude has an explicit “overdue” suffix after arrival.
 A rounded `0.0 days` can still be upcoming. DST does not redefine a day. Dates

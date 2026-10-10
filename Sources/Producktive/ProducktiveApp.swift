@@ -40,6 +40,7 @@ struct DeadlinePanel: View {
     @ObservedObject var model: AppModel
     @State private var agents = Set<Agent>()
     @State private var showAgents = false
+    @State private var showSettings = false
     @State private var visibilityID = UUID()
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -66,7 +67,7 @@ struct DeadlinePanel: View {
                             ForEach(snapshot.archived) { event in EventRow(event: event, archived: true, model: model) }
                         }
                     }.padding(.trailing, 6)
-                }.frame(height: min(480, max(140, CGFloat(snapshot.active.count) * 170 + 50)))
+                }.frame(height: min(max(140, 480 - (showSettings ? 130 : 0) - (showAgents ? 180 : 0)), max(140, CGFloat(snapshot.active.count) * 170 + 50)))
             } else if model.error == nil { ProgressView("Loading deadlines…") }
             Divider()
             HStack {
@@ -75,7 +76,23 @@ struct DeadlinePanel: View {
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
             }
-            Toggle("Launch at login", isOn: $model.launchAtLogin).onChange(of: model.launchAtLogin) { _ in model.toggleLogin() }
+            DisclosureGroup("Settings", isExpanded: $showSettings) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Stepper(value: $model.titleCharacterLimit, in: 1...80) {
+                        HStack {
+                            Text("Title length")
+                            Spacer()
+                            TextField("Characters", value: $model.titleCharacterLimit, format: .number.grouping(.never))
+                                .frame(width: 44).multilineTextAlignment(.trailing)
+                                .accessibilityLabel("Maximum title characters")
+                            Text("characters")
+                        }
+                    }
+                    Text("Limits the menu bar title, including the ellipsis.").font(.caption).foregroundStyle(.secondary)
+                    Text(model.label).font(.caption.monospaced()).textSelection(.enabled)
+                    Toggle("Launch at login", isOn: $model.launchAtLogin).onChange(of: model.launchAtLogin) { _ in model.toggleLogin() }
+                }.padding(.top, 6)
+            }
             DisclosureGroup("Install agent skill", isExpanded: $showAgents) {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Agent.allCases) { agent in

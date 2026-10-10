@@ -10,10 +10,11 @@ public struct CountdownEngine {
         let days = abs(date.timeIntervalSince(clock())) / 86400
         return String(format: "%.1f days", locale: Locale(identifier: "en_US_POSIX"), days)
     }
-    public func label(for event: ResolvedEvent?, stale: Bool = false) -> String {
+    public func label(for event: ResolvedEvent?, stale: Bool = false, titleCharacterLimit: Int = 24) -> String {
         let prefix = stale ? "⚠︎ " : ""
         guard let event else { return prefix + "Producktive · No deadlines" }
-        let title = event.event.title.count > 24 ? String(event.event.title.prefix(23)) + "…" : event.event.title
+        let limit = max(1, titleCharacterLimit)
+        let title = event.event.title.count > limit ? String(event.event.title.prefix(limit - 1)) + "…" : event.event.title
         return prefix + title + " · " + text(for: event.date) + (event.date <= clock() ? " overdue" : "")
     }
     // A single wakeup at a tenth-day rounding boundary or exact arrival.

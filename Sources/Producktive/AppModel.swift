@@ -11,6 +11,13 @@ import ProducktiveCore
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published private(set) var dropdownOpen = false
     @Published var skillMessage: String?
+    @Published var titleCharacterLimit: Int = 24 {
+        didSet {
+            let clamped = min(80, max(1, titleCharacterLimit))
+            if titleCharacterLimit != clamped { titleCharacterLimit = clamped }
+            UserDefaults.standard.set(titleCharacterLimit, forKey: "menuBarTitleCharacterLimit")
+        }
+    }
     private var revision: FileRevision?
     private var snapshotURL: URL?
     private var timer: Timer?
@@ -25,9 +32,12 @@ import ProducktiveCore
     private lazy var watcher = FileWatcher { [weak self] in self?.reload() }
     private let workQueue = DispatchQueue(label: "com.uxduck.producktive.store", qos: .userInitiated)
     var engine: CountdownEngine { CountdownEngine(clock: { self.now }) }
-    var label: String { engine.label(for: engine.selected(in: snapshot?.active ?? []), stale: error != nil) }
+    var label: String { engine.label(for: engine.selected(in: snapshot?.active ?? []), stale: error != nil, titleCharacterLimit: titleCharacterLimit) }
 
     init() {
+        if let savedLimit = UserDefaults.standard.object(forKey: "menuBarTitleCharacterLimit") as? Int {
+            titleCharacterLimit = min(80, max(1, savedLimit))
+        }
         if let index = CommandLine.arguments.firstIndex(of: "--data-home"), CommandLine.arguments.indices.contains(index + 1) {
             home = URL(fileURLWithPath: CommandLine.arguments[index + 1])
         } else { home = FileManager.default.homeDirectoryForCurrentUser }
