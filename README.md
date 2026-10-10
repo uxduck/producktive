@@ -40,7 +40,17 @@ open "$HOME/Applications/Producktive.app"
 
 Open `Package.swift` in Xcode to browse the core, app, CLI, and tests. The build
 script makes a universal native `.app` without generating an Xcode project.
-Yams 6.2.2 is the only package dependency, pinned in `Package.resolved`.
+Yams 6.2.2 and Sparkle 2.10.0 are pinned in `Package.resolved`.
+
+## Updates
+
+Release builds check for updates daily and install them when you quit. In
+**Settings**, turn automatic checks or installation off, or choose
+**Check for Updates…**. Sparkle handles downloads, verification, installation,
+and relaunching. Your deadline file stays outside the app bundle.
+
+Updates use signed archives and a signed feed over HTTPS. Local ad hoc builds,
+CI builds, and panel previews keep the updater disabled.
 
 ## Deadlines
 
@@ -152,8 +162,8 @@ Install the app in Applications before enabling **Launch at login**. It uses App
 ServiceManagement registration, which may need approval in System Settings →
 General → Login Items.
 
-The app has no network access, analytics, or AI service. It doesn't run a separate
-timer for every row either.
+The app accesses the network for software updates, with no analytics or AI
+service. It doesn't run a separate timer for every row either.
 
 ## Release and validation
 
@@ -166,5 +176,8 @@ You can also use `APPLE_API_KEY_PATH`, `APPLE_API_KEY` (the key ID), and
 outside the repository. The packaging script checks Apple's notarisation result
 before stapling and verifies Gatekeeper acceptance. Check the release notes for
 that release's signing and notarisation status.
+
+See [the updater release guide](docs/auto-updates.md) for signing and publishing
+the Sparkle feed to R2.
 
 MIT licensed. The public examples, tests, screenshots, and CI use fictional data.

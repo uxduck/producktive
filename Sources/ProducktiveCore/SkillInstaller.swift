@@ -9,6 +9,24 @@ public enum Agent: String, CaseIterable, Identifiable {
 
 public enum SkillInstaller {
     private static let marker = "Producktive managed skill v1\n"
+    /// Refresh only agents previously installed by this app after a bundle update.
+    public static func refreshInstalled(resources: URL,
+                                        home: URL = FileManager.default.homeDirectoryForCurrentUser) throws {
+        let agents = Set(Agent.allCases.filter { agent in
+            let destination = home.appendingPathComponent(agent.directory).appendingPathComponent("producktive")
+            return (try? String(contentsOf: destination.appendingPathComponent(".producktive-managed"), encoding: .utf8)) == marker
+        })
+        guard !agents.isEmpty else { return }
+        let sourceSkill = try Data(contentsOf: resources.appendingPathComponent("skills/producktive/SKILL.md"))
+        let sourceBinary = try Data(contentsOf: resources.appendingPathComponent("bin/producktive-cli"))
+        let binary = Config.directory(home: home).appendingPathComponent("bin/producktive-cli")
+        let skillsMatch = agents.allSatisfy { agent in
+            (try? Data(contentsOf: home.appendingPathComponent(agent.directory).appendingPathComponent("producktive/SKILL.md"))) == sourceSkill
+        }
+        if !skillsMatch || (try? Data(contentsOf: binary)) != sourceBinary {
+            _ = try install(agents: agents, resources: resources, home: home)
+        }
+    }
     public static func install(agents: Set<Agent>, resources: URL,
                                home: URL = FileManager.default.homeDirectoryForCurrentUser) throws -> [String] {
         guard !agents.isEmpty else { throw ProducktiveError("Select at least one agent.") }

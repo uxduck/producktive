@@ -1,14 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/release-config.sh
 scripts/build-app.sh
-app="dist/Producktive.app"
-# Developer ID releases require a secure timestamp.
-if [[ -n "${SIGNING_IDENTITY:-}" && "$SIGNING_IDENTITY" != "-" ]]; then
-  codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$app/Contents/Resources/bin/producktive-cli"
-  codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$app"
-fi
-archive="dist/Producktive-0.2.1-universal.zip"
+app="$DIST_DIR/Producktive.app"
+version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
+archive="$DIST_DIR/Producktive-$version-universal.zip"
 ditto -c -k --keepParent "$app" "$archive"
 notary_arguments=()
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
@@ -35,5 +32,8 @@ if [[ ${#notary_arguments[@]} -gt 0 ]]; then
   spctl --assess --type execute --verbose=2 "$PWD/$app"
   ditto -c -k --keepParent "$app" "$archive"
 fi
-(cd dist && shasum -a 256 "$(basename "$archive")") > "$archive.sha256"
+(cd "$DIST_DIR" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256"
 printf 'Packaged %s\n' "$archive"
+if /usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$app/Contents/Info.plist" >/dev/null 2>&1; then
+  scripts/generate-appcast.sh
+fi

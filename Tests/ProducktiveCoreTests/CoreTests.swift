@@ -280,6 +280,29 @@ final class CoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: different.appendingPathComponent(".agents/skills/producktive").path))
         XCTAssertEqual(try String(contentsOf: destination.appendingPathComponent("SKILL.md"), encoding: .utf8), "User skill")
     }
+    func testAppUpdateRefreshesOnlyPreviouslyManagedAgentTools() throws {
+        let home = try temporary(), resources = try temporary()
+        // A launch with no previous installation must not install agent tools.
+        XCTAssertNoThrow(try SkillInstaller.refreshInstalled(resources: resources, home: home))
+        let skill = resources.appendingPathComponent("skills/producktive/SKILL.md")
+        let binary = resources.appendingPathComponent("bin/producktive-cli")
+        for directory in [skill.deletingLastPathComponent(), binary.deletingLastPathComponent()] {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
+        try "old skill".write(to: skill, atomically: true, encoding: .utf8)
+        try "old binary".write(to: binary, atomically: true, encoding: .utf8)
+        _ = try SkillInstaller.install(agents: [.codex], resources: resources, home: home)
+        let unmanaged = home.appendingPathComponent(".claude/skills/producktive/SKILL.md")
+        try FileManager.default.createDirectory(at: unmanaged.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try "user skill".write(to: unmanaged, atomically: true, encoding: .utf8)
+        try "new skill".write(to: skill, atomically: true, encoding: .utf8)
+        try "new binary".write(to: binary, atomically: true, encoding: .utf8)
+        try SkillInstaller.refreshInstalled(resources: resources, home: home)
+        XCTAssertEqual(try String(contentsOf: home.appendingPathComponent(".producktive/bin/producktive-cli"), encoding: .utf8), "new binary")
+        XCTAssertEqual(try String(contentsOf: home.appendingPathComponent(".agents/skills/producktive/SKILL.md"), encoding: .utf8), "new skill")
+        XCTAssertEqual(try String(contentsOf: unmanaged, encoding: .utf8), "user skill")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: home.appendingPathComponent(".cursor/skills/producktive").path))
+    }
     func testIndentedDelimiterInsideUnknownLiteralIsPreserved() throws {
         let literal = "literal_note: |\n  ---\n  Keep [[Notes]] here\n"
         let source = fixture.replacingOccurrences(of: "extra_setting:", with: literal + "extra_setting:")

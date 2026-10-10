@@ -96,3 +96,25 @@ timestamps. Apple accepted notarization (submission
 `e0a1722e-81af-4e51-b37f-bcb3a9a15a8f`); stapler validation and Gatekeeper
 assessment passed. The universal ZIP and SHA-256 checksum were regenerated after
 stapling. No new Intel hardware or minimum-version live UI check was performed.
+
+October 10 automatic updates (local 0.3.0, build 5): all 23 core tests passed,
+including refreshing only previously managed agent tools after an app update.
+The universal Developer ID build embeds Sparkle 2.10.0 and signs its helpers,
+framework, CLI, and app from the inside out. Both architectures link Sparkle
+through the app's `Contents/Frameworks` runpath; deep code-sign verification passed.
+
+The generated feed and archives verify against the public key embedded in the
+app using CryptoKit. Temporary copies with a modified feed, modified archive,
+incorrect archive length, or missing archive signature were all rejected. The
+publisher dry run lists immutable payloads before the uncacheable feed.
+
+Native startup used fictional data under a temporary home. Settings showed both
+automatic check/install controls enabled and an enabled **Check for Updates…**
+button. A manual check of the unpublished feed returned Sparkle's update error
+dialog and left the deadline window usable. The test process was stopped.
+
+This update build has not been notarized or published. The existing rclone R2
+remote currently returns HTTP 400 `InvalidArgument: Authorization` on a read-only
+listing. Actual downloading, installation on quit, relaunch, and deadline/settings
+preservation require two notarized builds and a working published feed; these
+checks remain outstanding. The earlier idle measurements predate Sparkle.

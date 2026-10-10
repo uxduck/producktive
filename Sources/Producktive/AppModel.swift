@@ -4,6 +4,7 @@ import ServiceManagement
 import ProducktiveCore
 
 @MainActor final class AppModel: ObservableObject {
+    let updater = AppUpdater()
     @Published private(set) var snapshot: Snapshot?
     @Published private(set) var error: String?
     @Published private(set) var fileURL: URL?
@@ -202,6 +203,19 @@ import ProducktiveCore
         } catch { self.error = error.localizedDescription }
         launchAtLogin = SMAppService.mainApp.status == .enabled
         if SMAppService.mainApp.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+    }
+    func refreshInstalledSkills() {
+        guard Bundle.main.bundleURL.pathExtension == "app",
+              !CommandLine.arguments.contains("--preview-panel"),
+              let resources = Bundle.main.resourceURL else { return }
+        let home = home
+        workQueue.async { [weak self] in
+            do { try SkillInstaller.refreshInstalled(resources: resources, home: home) }
+            catch {
+                let message = "Unable to update installed agent tools: \(error.localizedDescription)"
+                DispatchQueue.main.async { self?.skillMessage = message }
+            }
+        }
     }
     func installSkills(_ agents: Set<Agent>) {
         guard let resources = Bundle.main.resourceURL else { return }

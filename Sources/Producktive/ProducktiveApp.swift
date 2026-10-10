@@ -17,6 +17,8 @@ import ProducktiveCore
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Apply the saved preference after SwiftUI has established its menu bar scene.
         model.applyDockVisibility()
+        model.updater.start()
+        model.refreshInstalledSkills()
         let event = NSAppleEventManager.shared().currentAppleEvent
         let loginLaunch = event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
         if !loginLaunch, !CommandLine.arguments.contains("--preview-panel") {
@@ -69,7 +71,7 @@ struct DeadlinePanel: View {
                             ForEach(snapshot.archived) { event in EventRow(event: event, archived: true, model: model) }
                         }
                     }.padding(.trailing, 6)
-                }.frame(height: min(max(140, 480 - (showSettings ? 160 : 0) - (showAgents ? 180 : 0)), max(140, CGFloat(snapshot.active.count) * 170 + 50)))
+                }.frame(height: min(max(140, 480 - (showSettings ? 270 : 0) - (showAgents ? 180 : 0)), max(140, CGFloat(snapshot.active.count) * 170 + 50)))
             } else if model.error == nil { ProgressView("Loading deadlines…") }
             Divider()
             HStack {
@@ -94,6 +96,8 @@ struct DeadlinePanel: View {
                     Text(model.label).font(.caption.monospaced()).textSelection(.enabled)
                     Toggle("Show Dock icon", isOn: $model.showDockIcon)
                     Toggle("Launch at login", isOn: $model.launchAtLogin).onChange(of: model.launchAtLogin) { _ in model.toggleLogin() }
+                    Divider()
+                    UpdateSettings(updater: model.updater)
                 }.padding(.top, 6)
             }
             DisclosureGroup("Install agent skill", isExpanded: $showAgents) {
